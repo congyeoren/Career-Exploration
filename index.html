@@ -42,12 +42,31 @@
         transform: translateY(0);
         opacity: 1;
       }
+      /* Skills link styling */
+      .skills-link {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      .skills-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+      }
     </style>
   </head>
 
   <body class="min-h-screen">
     <!-- Main container -->
     <div id="app" class="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8"></div>
+
+    <!-- Skills Link - Fixed Bottom Right -->
+    <a href="https://congyeoren.github.io/Career-Exploration/skills" 
+       class="skills-link bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-medium text-sm">
+      Click here to sort your skills →
+    </a>
 
     <script>
       /***********************************************
