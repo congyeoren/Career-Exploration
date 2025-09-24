@@ -342,7 +342,9 @@
       function updateCurrentTrait() {
         const currentTraitDiv = document.getElementById('current-trait');
         const currentTrait = remaining[0];
-        currentTraitDiv.innerHTML = renderCurrentTrait(currentTrait);
+        if (currentTraitDiv) {
+          currentTraitDiv.innerHTML = renderCurrentTrait(currentTrait);
+        }
       }
 
       function resetAll() {
@@ -391,7 +393,7 @@ Please suggest how I might begin identifying my personality traits and potential
           intro = `My top 3 personality traits are: ${keep[0]}, ${keep[1]}, ${keep[2]}.`;
         }
 
-        const finalPrompt = `${intro}
+        const finalPrompt = `I am a high school student exploring career options. ${intro}
 
 Please suggest 8-10 careers that strongly align with these personality traits. For each career, include:
 
