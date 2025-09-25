@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pastel Personality Sorter</title>
+    <title>Personality Sorter</title>
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -49,15 +49,18 @@
     <!-- Main container -->
     <div id="app" class="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8"></div>
 
-    <!-- Skills Link - Fixed Bottom Right (matching original styling) -->
-    <a href="https://congyeoren.github.io/Career-Exploration/skills" 
-       class="fixed bottom-4 right-4 px-4 py-3 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 transition-colors duration-200 shadow-lg text-sm z-50">
-      Click here to sort your skills →
-    </a>
+    <!-- Bottom right link -->
+    <div class="fixed bottom-4 right-4">
+      <a href="https://www.skillsfuture.gov.sg/skills-framework" 
+         target="_blank" 
+         class="inline-block px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors duration-200 shadow-lg">
+        Click here to sort your skills
+      </a>
+    </div>
 
     <script>
       /***********************************************
-       * Pastel Personality Sorter in pure HTML/JS
+       * Personality Sorter in pure HTML/JS
        * Tailwind for styling, fallback copy logic.
        ***********************************************/
 
