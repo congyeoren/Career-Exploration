@@ -408,4 +408,148 @@
     qs('#skillsContainer').innerHTML = skillsHTML;
 
     updateCurrentCard('traits');
-    up
+    updateCurrentCard('skills');
+    updateProgress('traits');
+    updateProgress('skills');
+  }
+
+  /********************************
+   * INTERACTIONS (DOM patching)
+   ********************************/
+  function rateItem(label, kind, bucket) {
+    const sets = (kind === 'traits')
+      ? { remaining: remainingTraits, low: lowTraits, mid: midTraits, high: highTraits, all: TRAITS }
+      : { remaining: remainingSkills, low: lowSkills, mid: midSkills, high: highSkills, all: SKILLS };
+
+    const current = sets.remaining[0];
+    if (!current || current.label !== label) return;
+
+    sets[bucket].push(current.label);
+    sets.remaining.shift();
+
+    appendToList(kind, bucket, current);
+    updateCurrentCard(kind);
+    updateProgress(kind);
+  }
+
+  function revertItem(label, kind, fromBucket) {
+    const sets = (kind === 'traits')
+      ? { remaining: remainingTraits, low: lowTraits, mid: midTraits, high: highTraits, all: TRAITS }
+      : { remaining: remainingSkills, low: lowSkills, mid: midSkills, high: highSkills, all: SKILLS };
+
+    removeFromList(kind, fromBucket, label).then(() => {
+      const arr = sets[fromBucket];
+      const idx = arr.indexOf(label);
+      if (idx > -1) arr.splice(idx, 1);
+
+      const original = sets.all.find(x => x.label === label);
+      if (original) sets.remaining.push(original);
+
+      updateCurrentCard(kind);
+      updateProgress(kind);
+    });
+  }
+
+  function resetAll(kind) {
+    if (kind === 'traits') {
+      remainingTraits = [...TRAITS];
+      lowTraits = []; midTraits = []; highTraits = [];
+      qs('#traits-low').innerHTML = '';
+      qs('#traits-mid').innerHTML = '';
+      qs('#traits-high').innerHTML = '';
+      updateCurrentCard('traits');
+      updateProgress('traits');
+    } else {
+      remainingSkills = [...SKILLS];
+      lowSkills = []; midSkills = []; highSkills = [];
+      qs('#skills-low').innerHTML = '';
+      qs('#skills-mid').innerHTML = '';
+      qs('#skills-high').innerHTML = '';
+      updateCurrentCard('skills');
+      updateProgress('skills');
+    }
+  }
+
+  /********************************
+   * PROMPT (from HIGH only, max 7 each)
+   ********************************/
+  function buildPrompt() {
+    const pickedTraits = highTraits.slice(0, 7);
+    const pickedSkills = highSkills.slice(0, 7);
+
+    const errors = [];
+    if (highTraits.length > 7) {
+      errors.push(`• You currently have ${highTraits.length} traits in “Describes me very well” (limit is 7). Please remove ${highTraits.length - 7}.`);
+    }
+    if (highSkills.length > 7) {
+      errors.push(`• You currently have ${highSkills.length} skills in “Describes me very well” (limit is 7). Please remove ${highSkills.length - 7}.`);
+    }
+    if (errors.length) {
+      return { error: "Almost there!\n\nTo proceed, reduce your selections:\n\n" + errors.join("\n") + "\n\nTip: Tap “Remove” beside any item to move it back." };
+    }
+
+    const skillsPart = pickedSkills.length
+      ? `My top ${pickedSkills.length} skill${pickedSkills.length>1?'s':''} ${pickedSkills.length===1?'is':'are'}: ${joinWithAnd(pickedSkills)}.`
+      : `I haven't shortlisted any skills yet.`;
+
+    const traitsPart = pickedTraits.length
+      ? `My top ${pickedTraits.length} personality trait${pickedTraits.length>1?'s':''} ${pickedTraits.length===1?'is':'are'}: ${joinWithAnd(pickedTraits)}.`
+      : `I haven't shortlisted any personality traits yet.`;
+
+    const text = `I am a high school student exploring career options. ${skillsPart} ${traitsPart}
+
+Please suggest 8–10 careers that strongly align with these skills and traits. For each career, include:
+- A brief description (1–2 sentences).
+- Why it fits my combination.
+- Examples of industries or workplaces where this career exists.
+
+Then, recommend 1–2 additional skills or traits I could develop to strengthen my fit for these careers.`;
+
+    return { text };
+  }
+
+  async function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      try { await navigator.clipboard.writeText(text); return true; }
+      catch { /* fallthrough */ }
+    }
+    // Fallback
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  async function copyPromptFlow() {
+    const result = buildPrompt();
+    if (result.error) {
+      alert(result.error);
+      return;
+    }
+    const ok = await copyToClipboard(result.text);
+    alert(ok ? "Prompt copied to clipboard. Paste it into your AI tool." : "Copy failed. Please select all and copy manually.");
+  }
+
+  /********************************
+   * BOOT
+   ********************************/
+  function initialRenderWrappers() {
+    initialRender();
+    updateCurrentCard('traits');
+    updateCurrentCard('skills');
+    updateProgress('traits');
+    updateProgress('skills');
+  }
+  initialRenderWrappers();
+  switchTab('traits');
+</script>
+</body>
+</html>
