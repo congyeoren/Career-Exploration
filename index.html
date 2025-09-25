@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
+      --green-700: #15803d; /* emerald-700 */
       --green-600: #16a34a; /* emerald-600 */
       --green-500: #22c55e; /* emerald-500 */
       --green-100: #dcfce7; /* emerald-100 */
@@ -14,34 +15,34 @@
       --gray-900:  #111827;
       --gray-700:  #374151;
       --gray-500:  #6b7280;
+      --gray-300:  #d1d5db;
       --gray-200:  #e5e7eb;
       --gray-100:  #f3f4f6;
       --white:     #ffffff;
     }
-    body {
-      background: var(--white);
-      color: var(--gray-900);
-    }
-    /* Cards & motion */
+    body { background: var(--white); color: var(--gray-900); }
     .card { transition: transform .12s ease, box-shadow .12s ease; }
     .card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.06); }
     .item { transition: all .35s cubic-bezier(.4,0,.2,1); transform: translateX(0); opacity: 1; }
     .item.removing { transform: translateX(-100%); opacity: 0; }
     .item.adding { transform: translateY(-12px); opacity: 0; }
     .item.added { transform: translateY(0); opacity: 1; }
-    .tab-active { border-bottom: 3px solid var(--green-600); color: var(--green-600); }
-    /* Sticky headers for lists */
+    .tab-active { border-bottom: 3px solid var(--green-600); color: var(--green-700); }
     .sticky-header { position: sticky; top: 0; z-index: 10; background: var(--white); }
-    /* Mobile-friendly tap targets */
     .btn { min-height: 44px; }
-    /* Bottom sticky bar on mobile */
     .bottom-bar {
       position: sticky; bottom: 0; z-index: 40; background: var(--white);
       border-top: 1px solid var(--gray-200);
       box-shadow: 0 -6px 20px rgba(0,0,0,.04);
     }
-    /* Accessible focus styles */
     :focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; border-radius: .5rem; }
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: none; align-items: center; justify-content: center; z-index: 50;
+    }
+    .modal { max-width: 42rem; width: calc(100% - 2rem); }
+    .modal-backdrop.show { display: flex; }
   </style>
 </head>
 <body class="min-h-screen">
@@ -70,16 +71,37 @@
     <section id="skillsContainer" class="hidden mt-6 md:mt-8"></section>
   </main>
 
-  <!-- Bottom sticky Copy bar (mobile-first; also visible on desktop) -->
+  <!-- Bottom sticky action bar -->
   <div class="bottom-bar">
     <div class="max-w-6xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4">
-      <p class="text-sm text-gray-700">
-        Copies up to <b>7</b> items from <b>“Describes me very well”</b> for traits and skills.
+      <p class="text-sm font-semibold text-gray-800">
+        Click here when done!
       </p>
       <div class="flex-1"></div>
-      <button onclick="copyPrompt()" class="btn px-5 py-3 rounded-lg bg-[color:var(--green-600)] text-white font-semibold hover:bg-[color:var(--green-500)] transition">
-        Copy Prompt
+      <button onclick="runAI()" class="btn px-5 py-3 rounded-lg bg-[color:var(--green-600)] text-white font-semibold hover:bg-[color:var(--green-500)] transition">
+        Potential jobs based on shortlisted traits and skills
       </button>
+    </div>
+  </div>
+
+  <!-- Prompt Preview Modal -->
+  <div id="promptModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="promptTitle">
+    <div class="modal bg-white rounded-xl p-4 md:p-6 shadow-2xl">
+      <div class="flex items-start gap-3">
+        <div class="flex-1">
+          <h3 id="promptTitle" class="text-lg md:text-xl font-bold">Your generated prompt</h3>
+          <p class="text-sm text-gray-600 mt-1">We opened ChatGPT in a new tab. Paste this prompt there (it’s already copied to your clipboard).</p>
+        </div>
+        <button class="btn px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-100" onclick="closePromptModal()">Close</button>
+      </div>
+      <textarea id="promptTextArea" class="w-full mt-4 p-3 border border-gray-300 rounded-lg text-sm leading-6" rows="8" readonly></textarea>
+      <div class="mt-4 flex items-center justify-between gap-3">
+        <div class="text-xs text-gray-600">Tip: You can edit this prompt before pasting it.</div>
+        <button class="btn px-4 py-2 rounded-lg border border-emerald-300 text-emerald-800 bg-[color:var(--green-50)] hover:bg-[color:var(--green-100)]"
+                onclick="copyAgain()">
+          Copy again
+        </button>
+      </div>
     </div>
   </div>
 
@@ -223,11 +245,10 @@
   function percent(n, d) { return d ? Math.round((n / d) * 100) : 0; }
 
   function makeListItem(kind, column, item) {
-    // color scheme: low = neutral; mid = green-100; high = green-50 with stronger accents
     const styles = {
-      low:  { border: 'border-gray-200', bg: 'bg-white',        title: 'text-gray-900', sub: 'text-gray-600', link: 'text-gray-700' },
-      mid:  { border: 'border-emerald-200', bg: 'bg-[color:var(--green-50)]',  title: 'text-emerald-700', sub: 'text-emerald-700', link: 'text-emerald-700' },
-      high: { border: 'border-emerald-300', bg: 'bg-[color:var(--green-100)]', title: 'text-emerald-800', sub: 'text-emerald-800', link: 'text-emerald-800' }
+      low:  { border: 'border-gray-200',   bg: 'bg-white',                     title: 'text-gray-900',   sub: 'text-gray-600',   link: 'text-gray-700' },
+      mid:  { border: 'border-emerald-200',bg: 'bg-[color:var(--green-50)]',   title: 'text-emerald-700',sub: 'text-emerald-700',link: 'text-emerald-700' },
+      high: { border: 'border-emerald-300',bg: 'bg-[color:var(--green-100)]',  title: 'text-emerald-800',sub: 'text-emerald-800',link: 'text-emerald-800' }
     }[column];
 
     const safeId = `${kind}-${column}-${item.label.replace(/\s+/g, '-').replace(/\//g, '-')}`;
@@ -279,6 +300,19 @@
       return;
     }
     const item = remaining[0];
+    const resetBtn = (kind === 'traits') ? `
+      <button onclick="resetAll('traits')"
+        class="btn w-full mt-4 px-4 py-3 rounded-lg bg-[color:var(--green-600)] text-white font-semibold hover:bg-[color:var(--green-500)]">
+        Reset Traits
+      </button>
+      <p class="text-[12px] text-gray-600 mt-1 text-center">This only resets traits. Skills remain unchanged.</p>
+    ` : `
+      <button onclick="resetAll('skills')"
+        class="btn w-full mt-4 px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-medium">
+        Reset Skills
+      </button>
+    `;
+
     currentWrap.innerHTML = `
       <div class="p-4 md:p-6 border border-gray-200 rounded-lg bg-white card">
         <p class="font-semibold text-lg md:text-xl mb-1">${item.label}</p>
@@ -288,6 +322,7 @@
           <button id="${kind}-mid-btn"  class="btn px-4 py-2 rounded-lg border border-emerald-300 text-emerald-800 bg-[color:var(--green-50)] hover:bg-[color:var(--green-100)]">Somewhat describes me</button>
           <button id="${kind}-high-btn" class="btn px-4 py-2 rounded-lg bg-[color:var(--green-600)] text-white hover:bg-[color:var(--green-500)]">Describes me very well</button>
         </div>
+        ${resetBtn}
       </div>
     `;
     qs(`#${kind}-low-btn`).onclick  = () => rateItem(item.label, kind, 'low');
@@ -328,15 +363,12 @@
         <p id="traits-progress-text" class="text-xs md:text-sm text-gray-700 mt-2 font-medium">0 of ${TRAITS.length} sorted (0%)</p>
       </div>
 
-      <!-- Responsive: current card + 3 columns -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
         <div class="md:col-span-1">
           <h2 class="text-lg font-bold mb-2 text-gray-900">Current Trait</h2>
           <div id="traits-current"></div>
-          <button onclick="resetAll('traits')" class="btn w-full mt-4 px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-medium">Reset Traits</button>
         </div>
 
-        <!-- LOW -->
         <div class="rounded-xl border border-gray-200 overflow-hidden">
           <div class="sticky-header px-3 py-2 bg-white border-b border-gray-200">
             <h3 class="text-base font-semibold text-gray-900 text-center">Does not describe me well <span id="traits-low-count" class="text-sm text-gray-600">(0)</span></h3>
@@ -344,7 +376,6 @@
           <ul id="traits-low" class="px-3 py-3 space-y-2 max-h-[420px] overflow-y-auto"></ul>
         </div>
 
-        <!-- MID -->
         <div class="rounded-xl border border-emerald-200 overflow-hidden">
           <div class="sticky-header px-3 py-2 bg-white border-b border-emerald-200">
             <h3 class="text-base font-semibold text-emerald-800 text-center">Somewhat describes me <span id="traits-mid-count" class="text-sm text-emerald-700">(0)</span></h3>
@@ -352,7 +383,6 @@
           <ul id="traits-mid" class="px-3 py-3 space-y-2 max-h-[420px] overflow-y-auto"></ul>
         </div>
 
-        <!-- HIGH -->
         <div class="rounded-xl border border-emerald-300 overflow-hidden">
           <div class="sticky-header px-3 py-2 bg-white border-b border-emerald-300">
             <h3 class="text-base font-semibold text-emerald-900 text-center">Describes me very well <span id="traits-high-count" class="text-sm text-emerald-800">(0)</span></h3>
@@ -374,10 +404,11 @@
         <div class="md:col-span-1">
           <h2 class="text-lg font-bold mb-2 text-gray-900">Current Skill</h2>
           <div id="skills-current"></div>
-          <button onclick="resetAll('skills')" class="btn w-full mt-4 px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-medium">Reset Skills</button>
+          <button onclick="resetAll('skills')" class="btn w-full mt-4 px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-medium">
+            Reset Skills
+          </button>
         </div>
 
-        <!-- LOW -->
         <div class="rounded-xl border border-gray-200 overflow-hidden">
           <div class="sticky-header px-3 py-2 bg-white border-b border-gray-200">
             <h3 class="text-base font-semibold text-gray-900 text-center">Does not describe me well <span id="skills-low-count" class="text-sm text-gray-600">(0)</span></h3>
@@ -385,7 +416,6 @@
           <ul id="skills-low" class="px-3 py-3 space-y-2 max-h-[420px] overflow-y-auto"></ul>
         </div>
 
-        <!-- MID -->
         <div class="rounded-xl border border-emerald-200 overflow-hidden">
           <div class="sticky-header px-3 py-2 bg-white border-b border-emerald-200">
             <h3 class="text-base font-semibold text-emerald-800 text-center">Somewhat describes me <span id="skills-mid-count" class="text-sm text-emerald-700">(0)</span></h3>
@@ -393,7 +423,6 @@
           <ul id="skills-mid" class="px-3 py-3 space-y-2 max-h-[420px] overflow-y-auto"></ul>
         </div>
 
-        <!-- HIGH -->
         <div class="rounded-xl border border-emerald-300 overflow-hidden">
           <div class="sticky-header px-3 py-2 bg-white border-b border-emerald-300">
             <h3 class="text-base font-semibold text-emerald-900 text-center">Describes me very well <span id="skills-high-count" class="text-sm text-emerald-800">(0)</span></h3>
@@ -472,7 +501,7 @@
   /********************************
    * PROMPT (from HIGH only, max 7 each)
    ********************************/
-  function copyPrompt() {
+  function buildPrompt() {
     const pickedTraits = highTraits.slice(0, 7);
     const pickedSkills = highSkills.slice(0, 7);
 
@@ -484,8 +513,7 @@
       errors.push(`• You currently have ${highSkills.length} skills in “Describes me very well” (limit is 7). Please remove ${highSkills.length - 7}.`);
     }
     if (errors.length) {
-      alert("Almost there!\n\nTo copy your prompt, reduce your selections in “Describes me very well”:\n\n" + errors.join("\n") + "\n\nTip: Tap “Remove” beside any item to move it back.");
-      return;
+      return { error: "Almost there!\n\nTo proceed, reduce your selections:\n\n" + errors.join("\n") + "\n\nTip: Tap “Remove” beside any item to move it back." };
     }
 
     const skillsPart = pickedSkills.length
@@ -493,7 +521,7 @@
       : `I haven't shortlisted any skills yet.`;
 
     const traitsPart = pickedTraits.length
-      ? `My top ${pickedTraits.length} trait${pickedTraits.length>1?'s':''} ${pickedTraits.length===1?'is':'are'}: ${joinWithAnd(pickedTraits)}.`
+      ? `My top ${pickedTraits.length} personality trait${pickedTraits.length>1?'s':''} ${pickedTraits.length===1?'is':'are'}: ${joinWithAnd(pickedTraits)}.`
       : `I haven't shortlisted any personality traits yet.`;
 
     const text = `I am a high school student exploring career options. ${skillsPart} ${traitsPart}
@@ -505,16 +533,14 @@ Please suggest 8–10 careers that strongly align with these skills and traits. 
 
 Then, recommend 1–2 additional skills or traits I could develop to strengthen my fit for these careers.`;
 
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text)
-        .then(() => alert("Prompt copied to clipboard!"))
-        .catch(() => fallbackCopy(text));
-    } else {
-      fallbackCopy(text);
-    }
+    return { text };
   }
 
-  function fallbackCopy(text) {
+  function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(() => true).catch(() => false);
+    }
+    // Fallback
     const ta = document.createElement("textarea");
     ta.value = text;
     ta.style.position = "fixed";
@@ -523,14 +549,38 @@ Then, recommend 1–2 additional skills or traits I could develop to strengthen 
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
-    try {
-      const ok = document.execCommand("copy");
-      alert(ok ? "Prompt copied to clipboard!" : "Failed to copy prompt via fallback.");
-    } catch {
-      alert("Failed to copy prompt.");
-    } finally {
-      document.body.removeChild(ta);
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch { ok = false; }
+    document.body.removeChild(ta);
+    return Promise.resolve(ok);
+  }
+
+  function openChatGPT() {
+    window.open("https://chatgpt.com", "_blank", "noopener,noreferrer");
+  }
+
+  async function runAI() {
+    const result = buildPrompt();
+    if (result.error) {
+      alert(result.error);
+      return;
     }
+    const text = result.text;
+    await copyToClipboard(text);
+    openChatGPT();
+    const ta = qs('#promptTextArea');
+    ta.value = text;
+    qs('#promptModal').classList.add('show');
+  }
+
+  function closePromptModal() {
+    qs('#promptModal').classList.remove('show');
+  }
+
+  async function copyAgain() {
+    const ta = qs('#promptTextArea');
+    const ok = await copyToClipboard(ta.value);
+    alert(ok ? "Copied again!" : "Copy failed. Please select all and copy manually.");
   }
 
   /********************************
