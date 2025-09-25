@@ -1,475 +1,550 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Personality Sorter</title>
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      /* Light pastel background gradient */
-      body {
-        background: linear-gradient(
-          to bottom right,
-          rgba(255, 240, 245, 1),
-          rgba(240, 255, 249, 1)
-        );
-      }
-      /* Subtle box shadow and hover lift for trait cards */
-      .trait-box {
-        transition: transform 0.1s ease;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-      }
-      .trait-box:hover {
-        transform: translateY(-2px);
-      }
-      /* Smooth removal animation */
-      .trait-item {
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateX(0);
-        opacity: 1;
-      }
-      .trait-item.removing {
-        transform: translateX(-100%);
-        opacity: 0;
-      }
-      /* Smooth addition animation */
-      .trait-item.adding {
-        transform: translateY(-20px);
-        opacity: 0;
-      }
-      .trait-item.added {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    </style>
-  </head>
-
-  <body class="min-h-screen">
-    <!-- Main container -->
-    <div id="app" class="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8"></div>
-
-    <!-- Bottom right link -->
-    <div class="fixed bottom-4 right-4">
-      <a href="https://www.skillsfuture.gov.sg/skills-framework" 
-         target="_blank" 
-         class="inline-block px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors duration-200 shadow-lg">
-        Click here to sort your skills
-      </a>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Personality & Skills Sorter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --green-600: #16a34a; /* emerald-600 */
+      --green-500: #22c55e; /* emerald-500 */
+      --green-100: #dcfce7; /* emerald-100 */
+      --green-50:  #f0fdf4; /* emerald-50  */
+      --gray-900:  #111827;
+      --gray-700:  #374151;
+      --gray-500:  #6b7280;
+      --gray-200:  #e5e7eb;
+      --gray-100:  #f3f4f6;
+      --white:     #ffffff;
+    }
+    body {
+      background: var(--white);
+      color: var(--gray-900);
+    }
+    /* Cards & motion */
+    .card { transition: transform .12s ease, box-shadow .12s ease; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.06); }
+    .item { transition: all .35s cubic-bezier(.4,0,.2,1); transform: translateX(0); opacity: 1; }
+    .item.removing { transform: translateX(-100%); opacity: 0; }
+    .item.adding { transform: translateY(-12px); opacity: 0; }
+    .item.added { transform: translateY(0); opacity: 1; }
+    .tab-active { border-bottom: 3px solid var(--green-600); color: var(--green-600); }
+    /* Sticky headers for lists */
+    .sticky-header { position: sticky; top: 0; z-index: 10; background: var(--white); }
+    /* Mobile-friendly tap targets */
+    .btn { min-height: 44px; }
+    /* Bottom sticky bar on mobile */
+    .bottom-bar {
+      position: sticky; bottom: 0; z-index: 40; background: var(--white);
+      border-top: 1px solid var(--gray-200);
+      box-shadow: 0 -6px 20px rgba(0,0,0,.04);
+    }
+    /* Accessible focus styles */
+    :focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; border-radius: .5rem; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <header class="max-w-6xl mx-auto px-4 pt-5 md:pt-8">
+    <div class="flex flex-col items-center text-center gap-2 md:gap-3">
+      <h1 class="text-2xl md:text-4xl font-extrabold tracking-tight">
+        Sort Your Traits & Skills
+      </h1>
+      <p class="text-sm md:text-base text-gray-700">
+        Place each item into one of the three columns.
+      </p>
     </div>
 
-    <script>
-      /***********************************************
-       * Personality Sorter in pure HTML/JS
-       * Tailwind for styling, fallback copy logic.
-       ***********************************************/
+    <!-- Tabs -->
+    <nav class="mt-5 md:mt-7 flex justify-center gap-8 text-base md:text-lg font-semibold">
+      <button id="tabTraits" class="pb-2 tab-active btn" onclick="switchTab('traits')">Personality Traits</button>
+      <button id="tabSkills" class="pb-2 btn" onclick="switchTab('skills')">Skills</button>
+    </nav>
+  </header>
 
-      // 50 personality traits (with short descriptions)
-      const TRAITS = [
-        { label: "Adventurous", description: "Eager to try new experiences and take risks." },
-        { label: "Ambitious", description: "Driven to achieve goals and succeed." },
-        { label: "Analytical", description: "Enjoys breaking down complex problems logically." },
-        { label: "Artistic", description: "Creative and drawn to aesthetic expression." },
-        { label: "Assertive", description: "Confident in expressing opinions and needs." },
-        { label: "Calm", description: "Maintains composure under pressure." },
-        { label: "Caring", description: "Shows genuine concern for others' wellbeing." },
-        { label: "Cautious", description: "Thinks carefully before making decisions." },
-        { label: "Charismatic", description: "Naturally attracts and influences others." },
-        { label: "Collaborative", description: "Works well with others towards shared goals." },
-        { label: "Competitive", description: "Thrives on challenges and winning." },
-        { label: "Confident", description: "Believes in own abilities and judgment." },
-        { label: "Creative", description: "Generates original ideas and artistic solutions." },
-        { label: "Curious", description: "Eager to learn and explore new ideas." },
-        { label: "Decisive", description: "Makes choices quickly and confidently." },
-        { label: "Detail-oriented", description: "Pays close attention to specifics and accuracy." },
-        { label: "Diplomatic", description: "Handles conflicts and negotiations tactfully." },
-        { label: "Disciplined", description: "Maintains self-control and follows routines." },
-        { label: "Empathetic", description: "Understands and shares others' emotions." },
-        { label: "Energetic", description: "High levels of enthusiasm and vitality." },
-        { label: "Flexible", description: "Adapts easily to changing circumstances." },
-        { label: "Focused", description: "Concentrates deeply on tasks and goals." },
-        { label: "Friendly", description: "Warm and approachable in social interactions." },
-        { label: "Honest", description: "Values truth and transparency in all dealings." },
-        { label: "Humorous", description: "Uses wit and comedy to connect with others." },
-        { label: "Independent", description: "Prefers to work and think autonomously." },
-        { label: "Innovative", description: "Generates original ideas and solutions." },
-        { label: "Intuitive", description: "Relies on instinct and gut feelings." },
-        { label: "Leadership-oriented", description: "Naturally takes charge and guides others." },
-        { label: "Logical", description: "Makes decisions based on reason and evidence." },
-        { label: "Loyal", description: "Committed and faithful to people and causes." },
-        { label: "Methodical", description: "Approaches tasks in an organised, systematic way." },
-        { label: "Open-minded", description: "Receptive to new ideas and perspectives." },
-        { label: "Optimistic", description: "Maintains a positive outlook on situations." },
-        { label: "Organised", description: "Keeps things structured and well-arranged." },
-        { label: "Outgoing", description: "Enjoys social interaction and meeting new people." },
-        { label: "Patient", description: "Remains calm when things take time." },
-        { label: "Perfectionist", description: "Strives for flawless results in work." },
-        { label: "Persistent", description: "Continues working despite obstacles." },
-        { label: "Practical", description: "Focuses on realistic, workable solutions." },
-        { label: "Proactive", description: "Takes initiative and anticipates needs." },
-        { label: "Reliable", description: "Consistently follows through on commitments." },
-        { label: "Reserved", description: "Thoughtful and selective in social interactions." },
-        { label: "Resourceful", description: "Finds creative ways to overcome challenges." },
-        { label: "Responsible", description: "Takes ownership of duties and obligations." },
-        { label: "Spontaneous", description: "Acts on impulse and embraces unpredictability." },
-        { label: "Strategic", description: "Plans ahead and considers long-term consequences." },
-        { label: "Supportive", description: "Encourages and helps others succeed." },
-        { label: "Thoughtful", description: "Considers others' feelings and perspectives." },
-        { label: "Visionary", description: "Sees possibilities and future potential." }
-      ];
+  <main class="max-w-6xl mx-auto px-4 pb-36 md:pb-16">
+    <!-- Traits -->
+    <section id="traitsContainer" class="mt-6 md:mt-8"></section>
 
-      // Sorting buckets
-      let keep = [];
-      let discard = [];
-      let remaining = [...TRAITS];
+    <!-- Skills -->
+    <section id="skillsContainer" class="hidden mt-6 md:mt-8"></section>
+  </main>
 
-      function render() {
-        const app = document.getElementById("app");
-        const currentTrait = remaining[0];
-        const sortedCount = keep.length + discard.length;
-        const total = TRAITS.length;
-        const progressPercent = Math.round((sortedCount / total) * 100);
+  <!-- Bottom sticky Copy bar (mobile-first; also visible on desktop) -->
+  <div class="bottom-bar">
+    <div class="max-w-6xl mx-auto px-4 py-3 md:py-4 flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4">
+      <p class="text-sm text-gray-700">
+        Copies up to <b>7</b> items from <b>“Describes me very well”</b> for traits and skills.
+      </p>
+      <div class="flex-1"></div>
+      <button onclick="copyPrompt()" class="btn px-5 py-3 rounded-lg bg-[color:var(--green-600)] text-white font-semibold hover:bg-[color:var(--green-500)] transition">
+        Copy Prompt
+      </button>
+    </div>
+  </div>
 
-        app.innerHTML = `
-          <h1 class="text-4xl font-extrabold mb-4 text-center text-purple-600">Sort Your Personality Traits</h1>
-          <p class="mb-6 text-center text-md text-purple-700 max-w-xl mx-auto">
-            Decide for each trait: Keep or Discard.<br/>
-            You can edit your choices anytime.
-          </p>
+<script>
+  /********************************
+   * DATA: 50 TRAITS + 50 SKILLS
+   ********************************/
+  const TRAITS = [
+    { label: "Adventurous", description: "Eager to try new experiences and take risks." },
+    { label: "Ambitious", description: "Driven to achieve goals and succeed." },
+    { label: "Analytical", description: "Enjoys breaking down complex problems logically." },
+    { label: "Artistic", description: "Creative and drawn to aesthetic expression." },
+    { label: "Assertive", description: "Confident in expressing opinions and needs." },
+    { label: "Calm", description: "Maintains composure under pressure." },
+    { label: "Caring", description: "Shows genuine concern for others' wellbeing." },
+    { label: "Cautious", description: "Thinks carefully before making decisions." },
+    { label: "Charismatic", description: "Naturally attracts and influences others." },
+    { label: "Collaborative", description: "Works well with others towards shared goals." },
+    { label: "Competitive", description: "Thrives on challenges and winning." },
+    { label: "Confident", description: "Believes in own abilities and judgment." },
+    { label: "Creative", description: "Generates original ideas and artistic solutions." },
+    { label: "Curious", description: "Eager to learn and explore new ideas." },
+    { label: "Decisive", description: "Makes choices quickly and confidently." },
+    { label: "Detail-oriented", description: "Pays close attention to specifics and accuracy." },
+    { label: "Diplomatic", description: "Handles conflicts and negotiations tactfully." },
+    { label: "Disciplined", description: "Maintains self-control and follows routines." },
+    { label: "Empathetic", description: "Understands and shares others' emotions." },
+    { label: "Energetic", description: "High levels of enthusiasm and vitality." },
+    { label: "Flexible", description: "Adapts easily to changing circumstances." },
+    { label: "Focused", description: "Concentrates deeply on tasks and goals." },
+    { label: "Friendly", description: "Warm and approachable in social interactions." },
+    { label: "Honest", description: "Values truth and transparency in all dealings." },
+    { label: "Humorous", description: "Uses wit and comedy to connect with others." },
+    { label: "Independent", description: "Prefers to work and think autonomously." },
+    { label: "Innovative", description: "Generates original ideas and solutions." },
+    { label: "Intuitive", description: "Relies on instinct and gut feelings." },
+    { label: "Leadership-oriented", description: "Naturally takes charge and guides others." },
+    { label: "Logical", description: "Makes decisions based on reason and evidence." },
+    { label: "Loyal", description: "Committed and faithful to people and causes." },
+    { label: "Methodical", description: "Approaches tasks in an organised, systematic way." },
+    { label: "Open-minded", description: "Receptive to new ideas and perspectives." },
+    { label: "Optimistic", description: "Maintains a positive outlook on situations." },
+    { label: "Organised", description: "Keeps things structured and well-arranged." },
+    { label: "Outgoing", description: "Enjoys social interaction and meeting new people." },
+    { label: "Patient", description: "Remains calm when things take time." },
+    { label: "Perfectionist", description: "Strives for flawless results in work." },
+    { label: "Persistent", description: "Continues working despite obstacles." },
+    { label: "Practical", description: "Focuses on realistic, workable solutions." },
+    { label: "Proactive", description: "Takes initiative and anticipates needs." },
+    { label: "Reliable", description: "Consistently follows through on commitments." },
+    { label: "Reserved", description: "Thoughtful and selective in social interactions." },
+    { label: "Resourceful", description: "Finds creative ways to overcome challenges." },
+    { label: "Responsible", description: "Takes ownership of duties and obligations." },
+    { label: "Spontaneous", description: "Acts on impulse and embraces unpredictability." },
+    { label: "Strategic", description: "Plans ahead and considers long-term consequences." },
+    { label: "Supportive", description: "Encourages and helps others succeed." },
+    { label: "Thoughtful", description: "Considers others' feelings and perspectives." },
+    { label: "Visionary", description: "Sees possibilities and future potential." }
+  ];
 
-          <!-- Progress bar -->
-          <div class="mb-8 text-center">
-            <div class="w-full bg-purple-100 rounded-full h-4">
-              <div class="bg-purple-300 h-4 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
-            </div>
-            <p class="text-sm text-purple-700 mt-1 font-medium">
-              <span id="progress-text">${sortedCount} of ${total} sorted (${progressPercent}%)</span>
-            </p>
+  const SKILLS = [
+    { label: "Active Listening", description: "Fully focusing on others to understand and respond thoughtfully." },
+    { label: "Communication", description: "Effectively conveying ideas through speaking and writing." },
+    { label: "Public Speaking", description: "Delivering oral presentations with confidence." },
+    { label: "Persuasion", description: "Influencing others to agree or take action." },
+    { label: "Negotiation", description: "Finding common ground to reach mutually beneficial agreements." },
+    { label: "Leadership", description: "Guiding and motivating a team to achieve goals." },
+    { label: "Teamwork", description: "Working cooperatively to accomplish shared objectives." },
+    { label: "Conflict Resolution", description: "Resolving disagreements effectively and diplomatically." },
+    { label: "Emotional Intelligence", description: "Recognizing and managing emotions in oneself and others." },
+    { label: "Adaptability", description: "Adjusting smoothly to new challenges and environments." },
+    { label: "Problem-Solving", description: "Identifying and resolving issues creatively." },
+    { label: "Critical Thinking", description: "Analyzing facts to form sound judgments." },
+    { label: "Creativity", description: "Developing imaginative ideas or solutions." },
+    { label: "Decision-Making", description: "Selecting an option based on analysis and insight." },
+    { label: "Time Management", description: "Organizing time to efficiently achieve tasks." },
+    { label: "Organization", description: "Structuring tasks and resources in an orderly manner." },
+    { label: "Attention to Detail", description: "Ensuring accuracy by focusing on small elements." },
+    { label: "Resilience", description: "Bouncing back quickly from setbacks." },
+    { label: "Stress Management", description: "Maintaining composure and balance under pressure." },
+    { label: "Networking", description: "Building professional relationships for mutual benefit." },
+    { label: "Mentoring", description: "Supporting and guiding others to develop their skills." },
+    { label: "Motivation", description: "Inspiring sustained enthusiasm and effort in self and others." },
+    { label: "Coding/Programming", description: "Writing code to develop software applications." },
+    { label: "Data Analysis", description: "Interpreting complex datasets to uncover insights." },
+    { label: "Mathematics", description: "Applying numerical methods for problem-solving." },
+    { label: "Research", description: "Investigating topics thoroughly to gather information." },
+    { label: "Foreign Languages", description: "Communicating fluently in non-native languages." },
+    { label: "Graphic Design", description: "Creating visual concepts using design principles." },
+    { label: "Video Production", description: "Creating and editing video content from concept to completion." },
+    { label: "Photography", description: "Capturing images with artistic or technical skill." },
+    { label: "Music", description: "Creating, composing, or performing musical works." },
+    { label: "Writing", description: "Crafting compelling narratives or clear technical documentation." },
+    { label: "Digital Marketing", description: "Promoting products and brands via digital channels." },
+    { label: "Financial Literacy", description: "Handling money and planning finances effectively." },
+    { label: "Sales", description: "Selling products or services to meet customer needs." },
+    { label: "Project Management", description: "Planning and overseeing projects to successful outcomes." },
+    { label: "Mechanical Skills", description: "Understanding and repairing mechanical systems." },
+    { label: "Systems Thinking", description: "Seeing interconnectedness and how different factors influence one another." },
+    { label: "Teaching", description: "Instructing and guiding others to learn new concepts." },
+    { label: "Event Planning", description: "Coordinating logistics for gatherings and celebrations." },
+    { label: "Customer Service", description: "Providing helpful and friendly assistance to customers." },
+    { label: "Strategic Planning", description: "Developing long-term plans to achieve organizational goals." },
+    { label: "Innovation", description: "Introducing new ideas, methods, or products." },
+    { label: "Risk Assessment", description: "Evaluating potential risks and developing mitigation strategies." },
+    { label: "Quality Control", description: "Ensuring products or services meet established standards." },
+    { label: "Budgeting", description: "Planning and managing financial resources effectively." },
+    { label: "Multitasking", description: "Managing multiple tasks or projects simultaneously." },
+    { label: "Cultural Awareness", description: "Understanding and respecting diverse cultural perspectives." },
+    { label: "Technical Writing", description: "Creating clear documentation for technical processes or products." },
+    { label: "Social Media Management", description: "Managing online presence and engagement across social platforms." }
+  ];
+
+  /********************************
+   * STATE
+   ********************************/
+  let remainingTraits = [...TRAITS], lowTraits = [], midTraits = [], highTraits = [];
+  let remainingSkills = [...SKILLS], lowSkills = [], midSkills = [], highSkills = [];
+  let activeTab = 'traits';
+
+  /********************************
+   * HELPERS
+   ********************************/
+  const qs  = (sel) => document.querySelector(sel);
+
+  function switchTab(tab) {
+    activeTab = tab;
+    qs('#traitsContainer').classList.toggle('hidden', tab !== 'traits');
+    qs('#skillsContainer').classList.toggle('hidden', tab !== 'skills');
+    qs('#tabTraits').classList.toggle('tab-active', tab === 'traits');
+    qs('#tabSkills').classList.toggle('tab-active', tab === 'skills');
+  }
+
+  function joinWithAnd(arr) {
+    if (arr.length === 0) return "";
+    if (arr.length === 1) return arr[0];
+    if (arr.length === 2) return `${arr[0]} and ${arr[1]}`;
+    return `${arr.slice(0, -1).join(", ")}, and ${arr[arr.length - 1]}`;
+  }
+
+  function percent(n, d) { return d ? Math.round((n / d) * 100) : 0; }
+
+  function makeListItem(kind, column, item) {
+    // color scheme: low = neutral; mid = green-100; high = green-50 with stronger accents
+    const styles = {
+      low:  { border: 'border-gray-200', bg: 'bg-white',        title: 'text-gray-900', sub: 'text-gray-600', link: 'text-gray-700' },
+      mid:  { border: 'border-emerald-200', bg: 'bg-[color:var(--green-50)]',  title: 'text-emerald-700', sub: 'text-emerald-700', link: 'text-emerald-700' },
+      high: { border: 'border-emerald-300', bg: 'bg-[color:var(--green-100)]', title: 'text-emerald-800', sub: 'text-emerald-800', link: 'text-emerald-800' }
+    }[column];
+
+    const safeId = `${kind}-${column}-${item.label.replace(/\s+/g, '-').replace(/\//g, '-')}`;
+    const li = document.createElement('li');
+    li.id = safeId;
+    li.className = `item adding p-3 border rounded-lg card ${styles.border} ${styles.bg}`;
+    li.innerHTML = `
+      <p class="font-semibold ${styles.title} flex justify-between items-center gap-3">
+        <span>${item.label}</span>
+        <button class="btn text-sm underline ${styles.link}">Remove</button>
+      </p>
+      <p class="text-xs mt-1 ${styles.sub}">${item.description}</p>
+    `;
+    li.querySelector('button').addEventListener('click', () => revertItem(item.label, kind, column));
+    return li;
+  }
+
+  function updateProgress(kind) {
+    const total = (kind === 'traits') ? TRAITS.length : SKILLS.length;
+    const done = (kind === 'traits')
+      ? (lowTraits.length + midTraits.length + highTraits.length)
+      : (lowSkills.length + midSkills.length + highSkills.length);
+
+    const pct = percent(done, total);
+    const bar = qs(`#${kind}-progress-bar`);
+    const text = qs(`#${kind}-progress-text`);
+    if (bar)  { bar.style.width = `${pct}%`; }
+    if (text) { text.textContent = `${done} of ${total} sorted (${pct}%)`; }
+
+    const setCount = (id, n) => { const el = qs(id); if (el) el.textContent = `(${n})`; };
+    if (kind === 'traits') {
+      setCount('#traits-low-count', lowTraits.length);
+      setCount('#traits-mid-count', midTraits.length);
+      setCount('#traits-high-count', highTraits.length);
+    } else {
+      setCount('#skills-low-count', lowSkills.length);
+      setCount('#skills-mid-count', midSkills.length);
+      setCount('#skills-high-count', highSkills.length);
+    }
+  }
+
+  function updateCurrentCard(kind) {
+    const currentWrap = qs(`#${kind}-current`);
+    const remaining = (kind === 'traits') ? remainingTraits : remainingSkills;
+    if (!currentWrap) return;
+
+    if (!remaining[0]) {
+      currentWrap.innerHTML = `<p class='text-sm text-gray-700 italic'>All ${kind} sorted! You can still make changes below.</p>`;
+      return;
+    }
+    const item = remaining[0];
+    currentWrap.innerHTML = `
+      <div class="p-4 md:p-6 border border-gray-200 rounded-lg bg-white card">
+        <p class="font-semibold text-lg md:text-xl mb-1">${item.label}</p>
+        <p class="text-sm text-gray-700 mb-4">${item.description}</p>
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
+          <button id="${kind}-low-btn"  class="btn px-4 py-2 rounded-lg border border-gray-300 text-gray-900 bg-white hover:bg-gray-100">Does not describe me well</button>
+          <button id="${kind}-mid-btn"  class="btn px-4 py-2 rounded-lg border border-emerald-300 text-emerald-800 bg-[color:var(--green-50)] hover:bg-[color:var(--green-100)]">Somewhat describes me</button>
+          <button id="${kind}-high-btn" class="btn px-4 py-2 rounded-lg bg-[color:var(--green-600)] text-white hover:bg-[color:var(--green-500)]">Describes me very well</button>
+        </div>
+      </div>
+    `;
+    qs(`#${kind}-low-btn`).onclick  = () => rateItem(item.label, kind, 'low');
+    qs(`#${kind}-mid-btn`).onclick  = () => rateItem(item.label, kind, 'mid');
+    qs(`#${kind}-high-btn`).onclick = () => rateItem(item.label, kind, 'high');
+  }
+
+  function appendToList(kind, column, item) {
+    const ul = qs(`#${kind}-${column}`);
+    if (!ul) return;
+    const li = makeListItem(kind, column, item);
+    ul.appendChild(li);
+    requestAnimationFrame(() => {
+      li.classList.remove('adding');
+      li.classList.add('added');
+    });
+  }
+
+  function removeFromList(kind, column, label) {
+    const safeId = `#${kind}-${column}-${label.replace(/\s+/g, '-').replace(/\//g, '-')}`;
+    const li = qs(safeId);
+    if (!li) return Promise.resolve();
+    li.classList.add('removing');
+    return new Promise((resolve) => {
+      setTimeout(() => { li.remove(); resolve(); }, 350);
+    });
+  }
+
+  /********************************
+   * INITIAL RENDER (structure only)
+   ********************************/
+  function initialRender() {
+    const traitsHTML = `
+      <div class="mb-4 md:mb-6">
+        <div class="w-full bg-gray-100 rounded-full h-3">
+          <div id="traits-progress-bar" class="h-3 rounded-full transition-all duration-300" style="width:0%; background: linear-gradient(90deg, var(--green-500), var(--green-600));"></div>
+        </div>
+        <p id="traits-progress-text" class="text-xs md:text-sm text-gray-700 mt-2 font-medium">0 of ${TRAITS.length} sorted (0%)</p>
+      </div>
+
+      <!-- Responsive: current card + 3 columns -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
+        <div class="md:col-span-1">
+          <h2 class="text-lg font-bold mb-2 text-gray-900">Current Trait</h2>
+          <div id="traits-current"></div>
+          <button onclick="resetAll('traits')" class="btn w-full mt-4 px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-medium">Reset Traits</button>
+        </div>
+
+        <!-- LOW -->
+        <div class="rounded-xl border border-gray-200 overflow-hidden">
+          <div class="sticky-header px-3 py-2 bg-white border-b border-gray-200">
+            <h3 class="text-base font-semibold text-gray-900 text-center">Does not describe me well <span id="traits-low-count" class="text-sm text-gray-600">(0)</span></h3>
           </div>
+          <ul id="traits-low" class="px-3 py-3 space-y-2 max-h-[420px] overflow-y-auto"></ul>
+        </div>
 
-          <!-- 3 columns layout -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Discard Column -->
-            <div>
-              <h2 class="text-xl font-bold mb-2 text-pink-600 text-center">Discard</h2>
-              <ul id="discard-list" class="space-y-2 max-h-[360px] overflow-y-auto pr-2">
-                ${renderTraitList(discard, 'discard')}
-              </ul>
-            </div>
-
-            <!-- Middle Column: Current Trait -->
-            <div class="text-center">
-              <h2 class="text-xl font-bold mb-2 text-gray-700">Current Trait</h2>
-              <div id="current-trait">
-                ${renderCurrentTrait(currentTrait)}
-              </div>
-              <!-- Reset Button -->
-              <button onclick="resetAll()"
-                class="block mt-5 px-6 py-2 bg-gray-100 text-gray-700 font-medium rounded hover:bg-gray-200 mx-auto"
-              >
-                Reset All
-              </button>
-            </div>
-
-            <!-- Keep Column -->
-            <div>
-              <h2 class="text-xl font-bold mb-2 text-green-600 text-center">Keep <span id="keep-count" class="text-sm text-green-700">(${keep.length})</span></h2>
-              <ul id="keep-list" class="space-y-2 max-h-[360px] overflow-y-auto pr-2">
-                ${renderTraitList(keep, 'keep')}
-              </ul>
-            </div>
+        <!-- MID -->
+        <div class="rounded-xl border border-emerald-200 overflow-hidden">
+          <div class="sticky-header px-3 py-2 bg-white border-b border-emerald-200">
+            <h3 class="text-base font-semibold text-emerald-800 text-center">Somewhat describes me <span id="traits-mid-count" class="text-sm text-emerald-700">(0)</span></h3>
           </div>
+          <ul id="traits-mid" class="px-3 py-3 space-y-2 max-h-[420px] overflow-y-auto"></ul>
+        </div>
 
-          <!-- Prompt Box with Copy Button -->
-          <div class="mt-10 p-4 border border-gray-200 rounded bg-white trait-box w-fit mx-auto text-center mb-20">
-            <h3 class="text-lg font-bold mb-2 text-purple-700">Your Prompt</h3>
-            <p class="text-sm text-gray-600 whitespace-pre-wrap" id="promptText">${PROMPT_TEXT}</p>
-            <button
-              onclick="copyPrompt()"
-              class="mt-3 px-4 py-2 bg-purple-200 text-purple-800 text-sm font-medium rounded hover:bg-purple-300"
-            >
-              Copy This Prompt
-            </button>
+        <!-- HIGH -->
+        <div class="rounded-xl border border-emerald-300 overflow-hidden">
+          <div class="sticky-header px-3 py-2 bg-white border-b border-emerald-300">
+            <h3 class="text-base font-semibold text-emerald-900 text-center">Describes me very well <span id="traits-high-count" class="text-sm text-emerald-800">(0)</span></h3>
           </div>
-        `;
-      }
+          <ul id="traits-high" class="px-3 py-3 space-y-2 max-h-[420px] overflow-y-auto"></ul>
+        </div>
+      </div>
+    `;
 
-      function renderTraitList(traits, type) {
-        const colorClass = type === 'keep' ? 'green' : 'pink';
-        return traits
-          .map((label) => {
-            const t = TRAITS.find((trait) => trait.label === label);
-            return `
-              <li id="trait-${type}-${label.replace(/\s+/g, '-').replace(/\//g, '-')}" class="trait-item p-3 border border-${colorClass}-200 rounded bg-${colorClass}-50 trait-box">
-                <p class="font-semibold text-${colorClass}-700 flex justify-between items-center">
-                  ${t.label}
-                  <button class="text-xs text-${colorClass}-600 underline ml-2"
-                    onclick="revertTraitSmooth('${label}', '${type}')"
-                  >
-                    Remove
-                  </button>
-                </p>
-                <p class="text-xs text-${colorClass}-700 mt-1">${t.description}</p>
-              </li>
-            `;
-          })
-          .join("");
-      }
+    const skillsHTML = `
+      <div class="mb-4 md:mb-6">
+        <div class="w-full bg-gray-100 rounded-full h-3">
+          <div id="skills-progress-bar" class="h-3 rounded-full transition-all duration-300" style="width:0%; background: linear-gradient(90deg, var(--green-500), var(--green-600));"></div>
+        </div>
+        <p id="skills-progress-text" class="text-xs md:text-sm text-gray-700 mt-2 font-medium">0 of ${SKILLS.length} sorted (0%)</p>
+      </div>
 
-      function renderCurrentTrait(currentTrait) {
-        if (!currentTrait) {
-          return `<p class='text-sm text-gray-700 italic'>All traits sorted! You can still make changes below.</p>`;
-        }
-        
-        return `
-          <div class="p-6 border border-gray-200 rounded bg-white trait-box inline-block">
-            <p class="font-semibold text-gray-800 text-lg mb-1">${currentTrait.label}</p>
-            <p class="text-sm text-gray-600 mb-4">${currentTrait.description}</p>
-            <div class="space-x-4">
-              <button onclick="keepTrait()"
-                class="px-4 py-2 bg-green-200 text-green-800 font-medium rounded hover:bg-green-300"
-              >
-                Keep
-              </button>
-              <button onclick="discardTrait()"
-                class="px-4 py-2 bg-pink-200 text-pink-800 font-medium rounded hover:bg-pink-300"
-              >
-                Discard
-              </button>
-            </div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
+        <div class="md:col-span-1">
+          <h2 class="text-lg font-bold mb-2 text-gray-900">Current Skill</h2>
+          <div id="skills-current"></div>
+          <button onclick="resetAll('skills')" class="btn w-full mt-4 px-4 py-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-medium">Reset Skills</button>
+        </div>
+
+        <!-- LOW -->
+        <div class="rounded-xl border border-gray-200 overflow-hidden">
+          <div class="sticky-header px-3 py-2 bg-white border-b border-gray-200">
+            <h3 class="text-base font-semibold text-gray-900 text-center">Does not describe me well <span id="skills-low-count" class="text-sm text-gray-600">(0)</span></h3>
           </div>
-        `;
-      }
+          <ul id="skills-low" class="px-3 py-3 space-y-2 max-h-[420px] overflow-y-auto"></ul>
+        </div>
 
-      function updateProgress() {
-        const sortedCount = keep.length + discard.length;
-        const total = TRAITS.length;
-        const progressPercent = Math.round((sortedCount / total) * 100);
-        
-        const progressBar = document.querySelector('.bg-purple-300');
-        const progressText = document.getElementById('progress-text');
-        const keepCount = document.getElementById('keep-count');
-        
-        if (progressBar) {
-          progressBar.style.width = `${progressPercent}%`;
-        }
-        if (progressText) {
-          progressText.textContent = `${sortedCount} of ${total} sorted (${progressPercent}%)`;
-        }
-        if (keepCount) {
-          keepCount.textContent = `(${keep.length})`;
-        }
-      }
+        <!-- MID -->
+        <div class="rounded-xl border border-emerald-200 overflow-hidden">
+          <div class="sticky-header px-3 py-2 bg-white border-b border-emerald-200">
+            <h3 class="text-base font-semibold text-emerald-800 text-center">Somewhat describes me <span id="skills-mid-count" class="text-sm text-emerald-700">(0)</span></h3>
+          </div>
+          <ul id="skills-mid" class="px-3 py-3 space-y-2 max-h-[420px] overflow-y-auto"></ul>
+        </div>
 
-      /**************************************
-       * Sorting Logic + Smooth Revert + Reset
-       **************************************/
-      function keepTrait() {
-        if (!remaining[0]) return;
-        const trait = remaining.shift();
-        keep.push(trait.label);
-        
-        // Add to keep list smoothly
-        const keepList = document.getElementById('keep-list');
-        const newItem = document.createElement('li');
-        newItem.id = `trait-keep-${trait.label.replace(/\s+/g, '-').replace(/\//g, '-')}`;
-        newItem.className = 'trait-item adding p-3 border border-green-200 rounded bg-green-50 trait-box';
-        newItem.innerHTML = `
-          <p class="font-semibold text-green-700 flex justify-between items-center">
-            ${trait.label}
-            <button class="text-xs text-green-600 underline ml-2"
-              onclick="revertTraitSmooth('${trait.label}', 'keep')"
-            >
-              Remove
-            </button>
-          </p>
-          <p class="text-xs text-green-700 mt-1">${trait.description}</p>
-        `;
-        
-        keepList.appendChild(newItem);
-        
-        // Trigger animation
-        requestAnimationFrame(() => {
-          newItem.classList.remove('adding');
-          newItem.classList.add('added');
-        });
-        
-        updateCurrentTrait();
-        updateProgress();
-      }
+        <!-- HIGH -->
+        <div class="rounded-xl border border-emerald-300 overflow-hidden">
+          <div class="sticky-header px-3 py-2 bg-white border-b border-emerald-300">
+            <h3 class="text-base font-semibold text-emerald-900 text-center">Describes me very well <span id="skills-high-count" class="text-sm text-emerald-800">(0)</span></h3>
+          </div>
+          <ul id="skills-high" class="px-3 py-3 space-y-2 max-h-[420px] overflow-y-auto"></ul>
+        </div>
+      </div>
+    `;
 
-      function discardTrait() {
-        if (!remaining[0]) return;
-        const trait = remaining.shift();
-        discard.push(trait.label);
-        
-        // Add to discard list smoothly
-        const discardList = document.getElementById('discard-list');
-        const newItem = document.createElement('li');
-        newItem.id = `trait-discard-${trait.label.replace(/\s+/g, '-').replace(/\//g, '-')}`;
-        newItem.className = 'trait-item adding p-3 border border-pink-200 rounded bg-pink-50 trait-box';
-        newItem.innerHTML = `
-          <p class="font-semibold text-pink-700 flex justify-between items-center">
-            ${trait.label}
-            <button class="text-xs text-pink-600 underline ml-2"
-              onclick="revertTraitSmooth('${trait.label}', 'discard')"
-            >
-              Remove
-            </button>
-          </p>
-          <p class="text-xs text-pink-700 mt-1">${trait.description}</p>
-        `;
-        
-        discardList.appendChild(newItem);
-        
-        // Trigger animation
-        requestAnimationFrame(() => {
-          newItem.classList.remove('adding');
-          newItem.classList.add('added');
-        });
-        
-        updateCurrentTrait();
-        updateProgress();
-      }
+    qs('#traitsContainer').innerHTML = traitsHTML;
+    qs('#skillsContainer').innerHTML = skillsHTML;
 
-      function revertTraitSmooth(label, from) {
-        const itemId = `trait-${from}-${label.replace(/\s+/g, '-').replace(/\//g, '-')}`;
-        const item = document.getElementById(itemId);
-        
-        if (!item) return;
-        
-        // Start removal animation
-        item.classList.add('removing');
-        
-        // Remove from data and DOM after animation completes
-        setTimeout(() => {
-          if (from === "keep") {
-            keep = keep.filter((t) => t !== label);
-          } else if (from === "discard") {
-            discard = discard.filter((t) => t !== label);
-          }
-          
-          const trait = TRAITS.find((t) => t.label === label);
-          remaining.push(trait);
-          
-          item.remove();
-          updateCurrentTrait();
-          updateProgress();
-        }, 400); // Match the CSS transition duration
-      }
+    updateCurrentCard('traits');
+    updateCurrentCard('skills');
+    updateProgress('traits');
+    updateProgress('skills');
+  }
 
-      function updateCurrentTrait() {
-        const currentTraitDiv = document.getElementById('current-trait');
-        const currentTrait = remaining[0];
-        if (currentTraitDiv) {
-          currentTraitDiv.innerHTML = renderCurrentTrait(currentTrait);
-        }
-      }
+  /********************************
+   * INTERACTIONS (DOM patching)
+   ********************************/
+  function rateItem(label, kind, bucket) {
+    const sets = (kind === 'traits')
+      ? { remaining: remainingTraits, low: lowTraits, mid: midTraits, high: highTraits, all: TRAITS }
+      : { remaining: remainingSkills, low: lowSkills, mid: midSkills, high: highSkills, all: SKILLS };
 
-      function resetAll() {
-        keep = [];
-        discard = [];
-        remaining = [...TRAITS];
-        render();
-      }
+    const current = sets.remaining[0];
+    if (!current || current.label !== label) return;
 
-      /**************************************
-       * Copy to Clipboard with Fallback
-       **************************************/
-      const PROMPT_TEXT = `I am a high school student exploring career options. My top 3 personality traits are: [Trait 1], [Trait 2], and [Trait 3].
+    sets[bucket].push(current.label);
+    sets.remaining.shift();
 
-Please suggest 8-10 careers that strongly align with these personality traits. For each career, include:
+    appendToList(kind, bucket, current);
+    updateCurrentCard(kind);
+    updateProgress(kind);
+  }
 
-- A brief description (1-2 sentences).
-- Why it fits my personality combination.
+  function revertItem(label, kind, fromBucket) {
+    const sets = (kind === 'traits')
+      ? { remaining: remainingTraits, low: lowTraits, mid: midTraits, high: highTraits, all: TRAITS }
+      : { remaining: remainingSkills, low: lowSkills, mid: midSkills, high: highSkills, all: SKILLS };
+
+    removeFromList(kind, fromBucket, label).then(() => {
+      const arr = sets[fromBucket];
+      const idx = arr.indexOf(label);
+      if (idx > -1) arr.splice(idx, 1);
+
+      const original = sets.all.find(x => x.label === label);
+      if (original) sets.remaining.push(original);
+
+      updateCurrentCard(kind);
+      updateProgress(kind);
+    });
+  }
+
+  function resetAll(kind) {
+    if (kind === 'traits') {
+      remainingTraits = [...TRAITS];
+      lowTraits = []; midTraits = []; highTraits = [];
+      qs('#traits-low').innerHTML = '';
+      qs('#traits-mid').innerHTML = '';
+      qs('#traits-high').innerHTML = '';
+      updateCurrentCard('traits');
+      updateProgress('traits');
+    } else {
+      remainingSkills = [...SKILLS];
+      lowSkills = []; midSkills = []; highSkills = [];
+      qs('#skills-low').innerHTML = '';
+      qs('#skills-mid').innerHTML = '';
+      qs('#skills-high').innerHTML = '';
+      updateCurrentCard('skills');
+      updateProgress('skills');
+    }
+  }
+
+  /********************************
+   * PROMPT (from HIGH only, max 7 each)
+   ********************************/
+  function copyPrompt() {
+    const pickedTraits = highTraits.slice(0, 7);
+    const pickedSkills = highSkills.slice(0, 7);
+
+    const errors = [];
+    if (highTraits.length > 7) {
+      errors.push(`• You currently have ${highTraits.length} traits in “Describes me very well” (limit is 7). Please remove ${highTraits.length - 7}.`);
+    }
+    if (highSkills.length > 7) {
+      errors.push(`• You currently have ${highSkills.length} skills in “Describes me very well” (limit is 7). Please remove ${highSkills.length - 7}.`);
+    }
+    if (errors.length) {
+      alert("Almost there!\n\nTo copy your prompt, reduce your selections in “Describes me very well”:\n\n" + errors.join("\n") + "\n\nTip: Tap “Remove” beside any item to move it back.");
+      return;
+    }
+
+    const skillsPart = pickedSkills.length
+      ? `My top ${pickedSkills.length} skill${pickedSkills.length>1?'s':''} ${pickedSkills.length===1?'is':'are'}: ${joinWithAnd(pickedSkills)}.`
+      : `I haven't shortlisted any skills yet.`;
+
+    const traitsPart = pickedTraits.length
+      ? `My top ${pickedTraits.length} trait${pickedTraits.length>1?'s':''} ${pickedTraits.length===1?'is':'are'}: ${joinWithAnd(pickedTraits)}.`
+      : `I haven't shortlisted any personality traits yet.`;
+
+    const text = `I am a high school student exploring career options. ${skillsPart} ${traitsPart}
+
+Please suggest 8–10 careers that strongly align with these skills and traits. For each career, include:
+- A brief description (1–2 sentences).
+- Why it fits my combination.
 - Examples of industries or workplaces where this career exists.
 
-Then, recommend 1-2 additional traits or skills I could develop to strengthen my fit for these careers.
+Then, recommend 1–2 additional skills or traits I could develop to strengthen my fit for these careers.`;
 
-Format your response in a clear list with headings.`;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text)
+        .then(() => alert("Prompt copied to clipboard!"))
+        .catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
 
-      function copyPrompt() {
-        // If more than 3 in keep => error message
-        if (keep.length > 3) {
-          alert("Ensure only top 3 traits are listed.");
-          return;
-        }
+  function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      const ok = document.execCommand("copy");
+      alert(ok ? "Prompt copied to clipboard!" : "Failed to copy prompt via fallback.");
+    } catch {
+      alert("Failed to copy prompt.");
+    } finally {
+      document.body.removeChild(ta);
+    }
+  }
 
-        if (keep.length === 0) {
-          const nonePrompt = `I am a high school student exploring career options. I have not chosen any personality traits yet.
-
-Please suggest how I might begin identifying my personality traits and potential careers based on them.`;
-          copyTextToClipboard(nonePrompt);
-          return;
-        }
-
-        let intro = "I have not chosen any traits.";
-        if (keep.length === 1) {
-          intro = `My top personality trait is: ${keep[0]}.`;
-        } else if (keep.length === 2) {
-          intro = `My top 2 personality traits are: ${keep[0]}, ${keep[1]}.`;
-        } else if (keep.length === 3) {
-          intro = `My top 3 personality traits are: ${keep[0]}, ${keep[1]}, ${keep[2]}.`;
-        }
-
-        const finalPrompt = `I am a high school student exploring career options. ${intro}
-
-Please suggest 8-10 careers that strongly align with these personality traits. For each career, include:
-
-- A brief description (1-2 sentences).
-- Why it fits my personality combination.
-- Examples of industries or workplaces where this career exists.
-
-Then, recommend 1-2 additional traits or skills I could develop to strengthen my fit for these careers.
-
-Format your response in a clear list with headings.`;
-
-        copyTextToClipboard(finalPrompt);
-      }
-
-      async function copyTextToClipboard(text) {
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(text)
-            .then(() => {
-              alert("Prompt copied to clipboard!");
-            })
-            .catch((err) => {
-              console.error("Failed using navigator.clipboard:", err);
-              fallbackCopy(text);
-            });
-        } else {
-          fallbackCopy(text);
-        }
-      }
-
-      function fallbackCopy(text) {
-        console.warn("Using fallback copy method.");
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed";
-        textArea.style.top = "-9999px";
-        textArea.style.left = "-9999px";
-
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-          const successful = document.execCommand("copy");
-          if (successful) {
-            alert("Prompt copied to clipboard!");
-          } else {
-            alert("Failed to copy prompt via fallback.");
-          }
-        } catch (fallbackErr) {
-          console.error("Fallback copy failed:", fallbackErr);
-          alert("Failed to copy prompt.");
-        } finally {
-          document.body.removeChild(textArea);
-        }
-      }
-
-      // Initial render
-      render();
-    </script>
-  </body>
+  /********************************
+   * BOOT
+   ********************************/
+  function initialRenderWrappers() {
+    initialRender();
+    updateCurrentCard('traits');
+    updateCurrentCard('skills');
+    updateProgress('traits');
+    updateProgress('skills');
+  }
+  initialRenderWrappers();
+  switchTab('traits');
+</script>
+</body>
 </html>
