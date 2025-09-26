@@ -1051,6 +1051,10 @@ Then, recommend 1–2 additional skills or traits I could develop to strengthen 
   }
 
   async function copyPromptFlow() {
+if (highTraits.length === 0 && highSkills.length === 0) {
+      alert("⚠️ Please shortlist at least one personality trait or one skill before copying your prompt.");
+      return;
+    }
     const result = buildPrompt();
     if (result.error) {
       alert(result.error);
