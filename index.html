@@ -288,8 +288,8 @@
     .choice-group > .btn {
       width: 100%;
       min-width: 0;
-      white-space: normal;   /* wrap text naturally */
-      word-break: keep-all;  /* avoid breaking inside words */
+      white-space: normal;
+      word-break: keep-all;
       text-align: center;
     }
 
@@ -767,7 +767,7 @@
     const bar = qs(`#${kind}-progress-bar`);
     const text = qs(`#${kind}-progress-text`);
     if (bar)  { bar.style.width = `${pct}%`; }
-    if (text) { text.textContent = `${pct}% complete`; }  // percentage only
+    if (text) { text.textContent = `${pct}% complete`; }
 
     const setCount = (id, n) => { const el = qs(id); if (el) el.textContent = `(${n})`; };
     if (kind === 'traits') {
@@ -794,14 +794,12 @@
             <span class="chip">Complete</span>
             <p>All ${label} sorted! You can still revisit your choices below.</p>
           </div>
-          <button onclick="resetAll('${kind}')" class="btn btn-secondary" type="button">Reset ${label.charAt(0).toUpperCase() + label.slice(1)}</button>
         </article>
       `;
       return;
     }
 
     const item = remaining[0];
-    const label = kind === 'traits' ? 'Traits' : 'Skills';
     currentWrap.innerHTML = `
       <article class="current-card">
         <div>
@@ -810,16 +808,15 @@
           <p>${item.description}</p>
         </div>
         <div class="choice-group">
-          <button id="${kind}-low-btn" class="btn choice-btn-low" type="button">Does not describe me well</button>
-          <button id="${kind}-mid-btn" class="btn choice-btn-mid" type="button">Somewhat describes me</button>
-          <button id="${kind}-high-btn" class="btn choice-btn-high" type="button">Describes me very well</button>
+          <button id="${kind}-high-btn" class="btn choice-btn-high" type="button">Best Describes Me</button>
+          <button id="${kind}-mid-btn" class="btn choice-btn-mid" type="button">Somewhat Describes Me</button>
+          <button id="${kind}-low-btn" class="btn choice-btn-low" type="button">Does Not Describe Me</button>
         </div>
-        <button onclick="resetAll('${kind}')" class="btn btn-secondary w-full" type="button">Reset ${label}</button>
       </article>
     `;
-    qs(`#${kind}-low-btn`).onclick  = () => rateItem(item.label, kind, 'low');
-    qs(`#${kind}-mid-btn`).onclick  = () => rateItem(item.label, kind, 'mid');
     qs(`#${kind}-high-btn`).onclick = () => rateItem(item.label, kind, 'high');
+    qs(`#${kind}-mid-btn`).onclick  = () => rateItem(item.label, kind, 'mid');
+    qs(`#${kind}-low-btn`).onclick  = () => rateItem(item.label, kind, 'low');
   }
 
   function appendToList(kind, column, item) {
@@ -861,28 +858,34 @@
           <div id="traits-current"></div>
         </div>
 
-        <div class="list-column column-low">
+        <!-- High, Mid, Low -->
+        <div class="list-column column-high">
           <div class="column-header">
-            <span>Does not describe me well</span>
-            <span id="traits-low-count" class="count-badge">(0)</span>
+            <span>Best Describes Me</span>
+            <span id="traits-high-count" class="count-badge">(0)</span>
           </div>
-          <ul id="traits-low" class="list-scroll"></ul>
+          <ul id="traits-high" class="list-scroll"></ul>
         </div>
 
         <div class="list-column column-mid">
           <div class="column-header">
-            <span>Somewhat describes me</span>
+            <span>Somewhat Describes Me</span>
             <span id="traits-mid-count" class="count-badge">(0)</span>
           </div>
           <ul id="traits-mid" class="list-scroll"></ul>
         </div>
 
-        <div class="list-column column-high">
+        <div class="list-column column-low">
           <div class="column-header">
-            <span>Describes me very well</span>
-            <span id="traits-high-count" class="count-badge">(0)</span>
+            <span>Does Not Describe Me</span>
+            <span id="traits-low-count" class="count-badge">(0)</span>
           </div>
-          <ul id="traits-high" class="list-scroll"></ul>
+          <ul id="traits-low" class="list-scroll"></ul>
+        </div>
+
+        <!-- Reset Traits at the very bottom -->
+        <div class="mt-4">
+          <button onclick="resetAll('traits')" class="btn btn-secondary w-full" type="button">Reset Traits</button>
         </div>
       </div>
     `;
@@ -901,28 +904,34 @@
           <div id="skills-current"></div>
         </div>
 
+        <!-- High, Mid, Low -->
+        <div class="list-column column-high">
+          <div class="column-header">
+            <span>Best Describes Me</span>
+            <span id="skills-high-count" class="count-badge">(0)</span>
+          </div>
+          <ul id="skills-high" class="list-scroll"></ul>
+        </div>
+
+        <div class="list-column column-mid">
+          <div class="column-header">
+            <span>Somewhat Describes Me</span>
+            <span id="skills-mid-count" class="count-badge">(0)</span>
+          </div>
+          <ul id="skills-mid" class="list-scroll"></ul>
+        </div>
+
         <div class="list-column column-low">
           <div class="column-header">
-            <span>Does not describe me well</span>
+            <span>Does Not Describe Me</span>
             <span id="skills-low-count" class="count-badge">(0)</span>
           </div>
           <ul id="skills-low" class="list-scroll"></ul>
         </div>
 
-        <div class="list-column column-mid">
-          <div class="column-header">
-            <span>Somewhat describes me</span>
-            <span id="skills-mid-count" class="count-badge">(0)</span>
-          </div>
-        <ul id="skills-mid" class="list-scroll"></ul>
-        </div>
-
-        <div class="list-column column-high">
-          <div class="column-header">
-            <span>Describes me very well</span>
-            <span id="skills-high-count" class="count-badge">(0)</span>
-          </div>
-          <ul id="skills-high" class="list-scroll"></ul>
+        <!-- Reset Skills at the very bottom -->
+        <div class="mt-4">
+          <button onclick="resetAll('skills')" class="btn btn-secondary w-full" type="button">Reset Skills</button>
         </div>
       </div>
     `;
@@ -1002,10 +1011,10 @@
 
     const errors = [];
     if (highTraits.length > 7) {
-      errors.push(`• You currently have ${highTraits.length} traits in “Describes me very well” (limit is 7). Please remove ${highTraits.length - 7}.`);
+      errors.push(`• You currently have ${highTraits.length} traits in “Best Describes Me” (limit is 7). Please remove ${highTraits.length - 7}.`);
     }
     if (highSkills.length > 7) {
-      errors.push(`• You currently have ${highSkills.length} skills in “Describes me very well” (limit is 7). Please remove ${highSkills.length - 7}.`);
+      errors.push(`• You currently have ${highSkills.length} skills in “Best Describes Me” (limit is 7). Please remove ${highSkills.length - 7}.`);
     }
     if (errors.length) {
       return { error: "Almost there!\n\nTo proceed, reduce your selections:\n\n" + errors.join("\n") + "\n\nTip: Tap “Remove” beside any item to move it back." };
@@ -1051,7 +1060,7 @@ Then, recommend 1–2 additional skills or traits I could develop to strengthen 
   }
 
   async function copyPromptFlow() {
-if (highTraits.length === 0 && highSkills.length === 0) {
+    if (highTraits.length === 0 && highSkills.length === 0) {
       alert("⚠️ Please shortlist at least one personality trait or one skill before copying your prompt.");
       return;
     }
