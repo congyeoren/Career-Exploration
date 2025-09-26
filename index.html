@@ -234,9 +234,10 @@
       gap: 1.5rem;
     }
 
+    /* Keep one column even on desktop so Current Trait/Skill stays above */
     @media (min-width: 960px) {
       .grid-layout {
-        grid-template-columns: minmax(0, 0.9fr) repeat(3, minmax(0, 1fr));
+        grid-template-columns: 1fr;
       }
     }
 
@@ -277,15 +278,19 @@
       width: fit-content;
     }
 
+    /* Choice buttons: always stacked vertically and full width */
     .choice-group {
       display: grid;
       gap: 0.75rem;
+      grid-template-columns: 1fr; /* single column at all sizes */
     }
 
-    @media (min-width: 600px) {
-      .choice-group {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
+    .choice-group > .btn {
+      width: 100%;
+      min-width: 0;
+      white-space: normal;   /* wrap text naturally */
+      word-break: keep-all;  /* avoid breaking inside words */
+      text-align: center;
     }
 
     .btn {
@@ -580,9 +585,8 @@
       <div class="flex flex-col gap-6">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div class="brand-block">
-            <span class="brand-mark">CE</span>
             <div>
-              <p class="eyebrow">Career Exploration Suite</p>
+              <p class="eyebrow">Career Exploration</p>
               <h1 class="page-title">Sort Your Traits &amp; Skills</h1>
             </div>
           </div>
@@ -618,112 +622,94 @@
 
 <script>
   /********************************
-   * DATA: 50 TRAITS + 50 SKILLS
+   * DATA: NEW TRAITS (37)
    ********************************/
   const TRAITS = [
-    { label: "Adventurous", description: "Eager to try new experiences and take risks." },
-    { label: "Ambitious", description: "Driven to achieve goals and succeed." },
-    { label: "Analytical", description: "Enjoys breaking down complex problems logically." },
-    { label: "Artistic", description: "Creative and drawn to aesthetic expression." },
-    { label: "Assertive", description: "Confident in expressing opinions and needs." },
-    { label: "Calm", description: "Maintains composure under pressure." },
-    { label: "Caring", description: "Shows genuine concern for others' wellbeing." },
-    { label: "Cautious", description: "Thinks carefully before making decisions." },
-    { label: "Charismatic", description: "Naturally attracts and influences others." },
-    { label: "Collaborative", description: "Works well with others towards shared goals." },
-    { label: "Competitive", description: "Thrives on challenges and winning." },
-    { label: "Confident", description: "Believes in own abilities and judgment." },
-    { label: "Creative", description: "Generates original ideas and artistic solutions." },
-    { label: "Curious", description: "Eager to learn and explore new ideas." },
-    { label: "Decisive", description: "Makes choices quickly and confidently." },
-    { label: "Detail-oriented", description: "Pays close attention to specifics and accuracy." },
-    { label: "Diplomatic", description: "Handles conflicts and negotiations tactfully." },
-    { label: "Disciplined", description: "Maintains self-control and follows routines." },
-    { label: "Empathetic", description: "Understands and shares others' emotions." },
-    { label: "Energetic", description: "High levels of enthusiasm and vitality." },
-    { label: "Flexible", description: "Adapts easily to changing circumstances." },
-    { label: "Focused", description: "Concentrates deeply on tasks and goals." },
-    { label: "Friendly", description: "Warm and approachable in social interactions." },
-    { label: "Honest", description: "Values truth and transparency in all dealings." },
-    { label: "Humorous", description: "Uses wit and comedy to connect with others." },
-    { label: "Independent", description: "Prefers to work and think autonomously." },
-    { label: "Innovative", description: "Generates original ideas and solutions." },
-    { label: "Intuitive", description: "Relies on instinct and gut feelings." },
-    { label: "Leadership-oriented", description: "Naturally takes charge and guides others." },
-    { label: "Logical", description: "Makes decisions based on reason and evidence." },
-    { label: "Loyal", description: "Committed and faithful to people and causes." },
-    { label: "Methodical", description: "Approaches tasks in an organised, systematic way." },
-    { label: "Open-minded", description: "Receptive to new ideas and perspectives." },
-    { label: "Optimistic", description: "Maintains a positive outlook on situations." },
-    { label: "Organised", description: "Keeps things structured and well-arranged." },
-    { label: "Outgoing", description: "Enjoys social interaction and meeting new people." },
-    { label: "Patient", description: "Remains calm when things take time." },
-    { label: "Perfectionist", description: "Strives for flawless results in work." },
-    { label: "Persistent", description: "Continues working despite obstacles." },
-    { label: "Practical", description: "Focuses on realistic, workable solutions." },
-    { label: "Proactive", description: "Takes initiative and anticipates needs." },
-    { label: "Reliable", description: "Consistently follows through on commitments." },
-    { label: "Reserved", description: "Thoughtful and selective in social interactions." },
-    { label: "Resourceful", description: "Finds creative ways to overcome challenges." },
-    { label: "Responsible", description: "Takes ownership of duties and obligations." },
-    { label: "Spontaneous", description: "Acts on impulse and embraces unpredictability." },
-    { label: "Strategic", description: "Plans ahead and considers long-term consequences." },
-    { label: "Supportive", description: "Encourages and helps others succeed." },
-    { label: "Thoughtful", description: "Considers others' feelings and perspectives." },
-    { label: "Visionary", description: "Sees possibilities and future potential." }
+    { label: "Achievement-oriented", description: "Focused on setting and reaching goals" },
+    { label: "Action-oriented", description: "Prefers doing over deliberating" },
+    { label: "Adaptable", description: "Adjusts well to change" },
+    { label: "Adventurous", description: "Willing to take risks and try new things" },
+    { label: "Artistic", description: "Expresses themselves through various art forms" },
+    { label: "Assertive", description: "Confident in expressing opinions and needs" },
+    { label: "Composed", description: "Stays collected and in control" },
+    { label: "Confident", description: "Believes in oneself and one's decisions" },
+    { label: "Considerate", description: "Thinks of others' feelings and needs" },
+    { label: "Creative", description: "Able to produce original and imaginative ideas" },
+    { label: "Curious", description: "Eager to explore new ideas and experiences" },
+    { label: "Dependable", description: "Can be counted on and trusted" },
+    { label: "Disciplined", description: "Maintains control and follows routines" },
+    { label: "Efficient", description: "Achieves maximum productivity with minimum waste" },
+    { label: "Empathetic", description: "Understands and shares others' emotions" },
+    { label: "Energetic", description: "Full of vitality and activity" },
+    { label: "Enthusiastic", description: "Shows intense enjoyment and interest" },
+    { label: "Expressive", description: "Openly shows thoughts and emotions" },
+    { label: "Group-oriented", description: "Prefers to work with others in teams" },
+    { label: "Helpful", description: "Eager to assist others" },
+    { label: "Imaginative", description: "Thinks in creative and fantastical ways" },
+    { label: "Innovative", description: "Skilled at introducing new methods or ideas" },
+    { label: "Intellectual", description: "Engages deeply with ideas and enjoys thinking" },
+    { label: "Level-headed", description: "Thinks clearly in difficult situations" },
+    { label: "Optimistic", description: "Looks at the positive side of situations" },
+    { label: "Organised", description: "Keeps things tidy and plans ahead" },
+    { label: "Original", description: "Comes up with unique and independent ideas" },
+    { label: "Patient", description: "Endures delays or problems calmly" },
+    { label: "Resilient", description: "Bounces back from setbacks" },
+    { label: "Responsible", description: "Reliable and accountable for actions" },
+    { label: "Sociable", description: "Finds joy in social interactions" },
+    { label: "Steady", description: "Reliable and unwavering" },
+    { label: "Systematic", description: "Uses methodical approaches to solve problems" },
+    { label: "Tactful", description: "Says or does things in a considerate way" },
+    { label: "Thorough", description: "Pays attention to detail and completeness" },
+    { label: "Trusting", description: "Believes in the reliability of others" },
+    { label: "Versatile", description: "Adapts easily to different tasks or situations" }
   ];
 
+  /********************************
+   * DATA: NEW SKILLS (42)
+   ********************************/
   const SKILLS = [
-    { label: "Active Listening", description: "Fully focusing on others to understand and respond thoughtfully." },
-    { label: "Communication", description: "Effectively conveying ideas through speaking and writing." },
-    { label: "Public Speaking", description: "Delivering oral presentations with confidence." },
-    { label: "Persuasion", description: "Influencing others to agree or take action." },
-    { label: "Negotiation", description: "Finding common ground to reach mutually beneficial agreements." },
-    { label: "Leadership", description: "Guiding and motivating a team to achieve goals." },
-    { label: "Teamwork", description: "Working cooperatively to accomplish shared objectives." },
-    { label: "Conflict Resolution", description: "Resolving disagreements effectively and diplomatically." },
-    { label: "Emotional Intelligence", description: "Recognizing and managing emotions in oneself and others." },
-    { label: "Adaptability", description: "Adjusting smoothly to new challenges and environments." },
-    { label: "Problem-Solving", description: "Identifying and resolving issues creatively." },
-    { label: "Critical Thinking", description: "Analyzing facts to form sound judgments." },
-    { label: "Creativity", description: "Developing imaginative ideas or solutions." },
-    { label: "Decision-Making", description: "Selecting an option based on analysis and insight." },
-    { label: "Time Management", description: "Organizing time to efficiently achieve tasks." },
-    { label: "Organization", description: "Structuring tasks and resources in an orderly manner." },
-    { label: "Attention to Detail", description: "Ensuring accuracy by focusing on small elements." },
-    { label: "Resilience", description: "Bouncing back quickly from setbacks." },
-    { label: "Stress Management", description: "Maintaining composure and balance under pressure." },
-    { label: "Networking", description: "Building professional relationships for mutual benefit." },
-    { label: "Mentoring", description: "Supporting and guiding others to develop their skills." },
-    { label: "Motivation", description: "Inspiring sustained enthusiasm and effort in self and others." },
-    { label: "Coding/Programming", description: "Writing code to develop software applications." },
-    { label: "Data Analysis", description: "Interpreting complex datasets to uncover insights." },
-    { label: "Mathematics", description: "Applying numerical methods for problem-solving." },
-    { label: "Research", description: "Investigating topics thoroughly to gather information." },
-    { label: "Foreign Languages", description: "Communicating fluently in non-native languages." },
-    { label: "Graphic Design", description: "Creating visual concepts using design principles." },
-    { label: "Video Production", description: "Creating and editing video content from concept to completion." },
-    { label: "Photography", description: "Capturing images with artistic or technical skill." },
-    { label: "Music", description: "Creating, composing, or performing musical works." },
-    { label: "Writing", description: "Crafting compelling narratives or clear technical documentation." },
-    { label: "Digital Marketing", description: "Promoting products and brands via digital channels." },
-    { label: "Financial Literacy", description: "Handling money and planning finances effectively." },
-    { label: "Sales", description: "Selling products or services to meet customer needs." },
-    { label: "Project Management", description: "Planning and overseeing projects to successful outcomes." },
-    { label: "Mechanical Skills", description: "Understanding and repairing mechanical systems." },
-    { label: "Systems Thinking", description: "Seeing interconnectedness and how different factors influence one another." },
-    { label: "Teaching", description: "Instructing and guiding others to learn new concepts." },
-    { label: "Event Planning", description: "Coordinating logistics for gatherings and celebrations." },
-    { label: "Customer Service", description: "Providing helpful and friendly assistance to customers." },
-    { label: "Strategic Planning", description: "Developing long-term plans to achieve organizational goals." },
-    { label: "Innovation", description: "Introducing new ideas, methods, or products." },
-    { label: "Risk Assessment", description: "Evaluating potential risks and developing mitigation strategies." },
-    { label: "Quality Control", description: "Ensuring products or services meet established standards." },
-    { label: "Budgeting", description: "Planning and managing financial resources effectively." },
-    { label: "Multitasking", description: "Managing multiple tasks or projects simultaneously." },
-    { label: "Cultural Awareness", description: "Understanding and respecting diverse cultural perspectives." },
-    { label: "Technical Writing", description: "Creating clear documentation for technical processes or products." },
-    { label: "Social Media Management", description: "Managing online presence and engagement across social platforms." }
+    { label: "Acting/Performance", description: "Portraying roles convincingly on stage or screen" },
+    { label: "Active Listening", description: "Fully focusing on others to understand and respond thoughtfully" },
+    { label: "Adaptability", description: "Adjusting smoothly to new challenges and environments" },
+    { label: "Attention to Detail", description: "Ensuring accuracy by focusing on small elements" },
+    { label: "Coding/Programming", description: "Writing code to develop software applications" },
+    { label: "Communication (Verbal)", description: "Effectively conveying ideas and information by speaking" },
+    { label: "Communication (Written)", description: "Clearly expressing ideas in writing" },
+    { label: "Conflict Resolution", description: "Resolving disagreements effectively and diplomatically" },
+    { label: "Cooking/Culinary Arts", description: "Preparing and experimenting with meals" },
+    { label: "Creativity", description: "Developing imaginative ideas or solutions" },
+    { label: "Critical Thinking", description: "Analyzing facts to form sound judgments" },
+    { label: "Data Analysis", description: "Interpreting complex datasets to uncover insights" },
+    { label: "Data Modelling", description: "Create models to predict an outcome" },
+    { label: "Digital Marketing", description: "Promoting products and brands via digital channels" },
+    { label: "Emotional Intelligence", description: "Recognizing and managing emotions in oneself and others" },
+    { label: "Empathy", description: "Understanding and sharing the feelings of others" },
+    { label: "Event Planning", description: "Coordinating logistics for gatherings and celebrations" },
+    { label: "Financial Literacy/Budgeting", description: "Handling money and planning finances effectively" },
+    { label: "Foreign Languages", description: "Communicating fluently in non-native languages" },
+    { label: "Graphic Design", description: "Creating visual concepts using design principles" },
+    { label: "Information Architecture", description: "Structuring, organising and labelling content to make it accessible for users" },
+    { label: "Leadership", description: "Guiding and motivating a team to achieve goals" },
+    { label: "Mathematics", description: "Applying numerical methods for problem-solving" },
+    { label: "Mechanical Skills", description: "Understanding and repairing mechanical systems" },
+    { label: "Mentoring", description: "Supporting and guiding others to develop their skills" },
+    { label: "Motivation (Self & Others)", description: "Inspiring sustained enthusiasm and effort" },
+    { label: "Music Composition/Performance", description: "Creating or performing musical works" },
+    { label: "Networking", description: "Building professional relationships for mutual benefit" },
+    { label: "Patience", description: "Remaining calm when faced with delays or challenges" },
+    { label: "Persuasion", description: "Influencing others to agree or take action" },
+    { label: "Photography", description: "Capturing images with artistic or technical skill" },
+    { label: "Problem-Solving", description: "Identifying and resolving issues creatively" },
+    { label: "Project Management", description: "Planning and overseeing projects to successful outcomes" },
+    { label: "Public Speaking", description: "Delivering oral presentations with confidence" },
+    { label: "Research", description: "Investigating topics thoroughly to gather information" },
+    { label: "Sales", description: "Selling products or services to meet customer needs" },
+    { label: "Scientific Lab Skills", description: "Conducting experiments and analyzing data in a lab" },
+    { label: "Social Media Management", description: "Managing online presence across social networks" },
+    { label: "Systems Thinking", description: "Ability to see the interconnectedness of systems and how different factors influence one another" },
+    { label: "Teaching/Tutoring", description: "Instructing students individually or in groups" },
+    { label: "Time Management", description: "Organizing time to efficiently achieve tasks" },
+    { label: "Video Editing", description: "Cutting and assembling video footage into cohesive content" }
   ];
 
   /********************************
@@ -781,7 +767,7 @@
     const bar = qs(`#${kind}-progress-bar`);
     const text = qs(`#${kind}-progress-text`);
     if (bar)  { bar.style.width = `${pct}%`; }
-    if (text) { text.textContent = `${done} of ${total} sorted (${pct}%)`; }
+    if (text) { text.textContent = `${pct}% complete`; }  // percentage only
 
     const setCount = (id, n) => { const el = qs(id); if (el) el.textContent = `(${n})`; };
     if (kind === 'traits') {
@@ -866,7 +852,7 @@
         <div class="progress-track">
           <div id="traits-progress-bar" class="progress-bar" style="width:0%"></div>
         </div>
-        <p id="traits-progress-text" class="progress-text">0 of ${TRAITS.length} sorted (0%)</p>
+        <p id="traits-progress-text" class="progress-text">0% complete</p>
       </div>
 
       <div class="grid-layout">
@@ -906,7 +892,7 @@
         <div class="progress-track">
           <div id="skills-progress-bar" class="progress-bar" style="width:0%"></div>
         </div>
-        <p id="skills-progress-text" class="progress-text">0 of ${SKILLS.length} sorted (0%)</p>
+        <p id="skills-progress-text" class="progress-text">0% complete</p>
       </div>
 
       <div class="grid-layout">
@@ -928,7 +914,7 @@
             <span>Somewhat describes me</span>
             <span id="skills-mid-count" class="count-badge">(0)</span>
           </div>
-          <ul id="skills-mid" class="list-scroll"></ul>
+        <ul id="skills-mid" class="list-scroll"></ul>
         </div>
 
         <div class="list-column column-high">
