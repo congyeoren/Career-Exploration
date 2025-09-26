@@ -848,7 +848,7 @@
    ********************************/
   function initialRender() {
     const traitsHTML = `
-      <div class="status-card">
+      <div class="status-card" style="display:none">
         <div class="progress-track">
           <div id="traits-progress-bar" class="progress-bar" style="width:0%"></div>
         </div>
@@ -888,7 +888,7 @@
     `;
 
     const skillsHTML = `
-      <div class="status-card">
+      <div class="status-card" style="display:none">
         <div class="progress-track">
           <div id="skills-progress-bar" class="progress-bar" style="width:0%"></div>
         </div>
@@ -1017,7 +1017,7 @@
 
     const traitsPart = pickedTraits.length
       ? `My top ${pickedTraits.length} personality trait${pickedTraits.length>1?'s':''} ${pickedTraits.length===1?'is':'are'}: ${joinWithAnd(pickedTraits)}.`
-      : `I haven't shortlisted any personality traits yet.`;
+      : `I haven't shortlisted any tab yet.`;
 
     const text = `I am a high school student exploring career options. ${skillsPart} ${traitsPart}
 
